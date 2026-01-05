@@ -4,7 +4,7 @@ A high-performance deep learning application designed to distinguish between hum
 
 ## 🚀 Live Demo
 Access the live application here:  
-**[👉 Live on Hugging Face Spaces](https://huggingface.co/spaces/YOUR_USERNAME/YOUR_SPACE_NAME)**
+**[👉 Live on Hugging Face Spaces](https://mee0011-bangla-ai-detector.hf.space/)**
 
 ---
 
