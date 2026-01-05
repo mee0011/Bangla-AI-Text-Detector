@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Text Detector Circle View</title>
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Hind Siliguri', sans-serif;
+            background-color: #f0f2f5;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 15px;
+        }
+
+        .container {
+            background: #ffffff;
+            width: 100%;
+            max-width: 800px;
+            height: 95vh;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            display: flex;
+            flex-direction: column;
+        }
+
+        h1 { color: #1e293b; text-align: center; margin-bottom: 5px; }
+        p.subtitle { text-align: center; color: #64748b; margin-bottom: 20px; font-size: 0.9rem; }
+
+        .input-wrapper {
+            flex-grow: 1;
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        textarea {
+            width: 100%;
+            height: 100%;
+            padding: 20px;
+            border: 2px solid #e2e8f0;
+            border-radius: 15px;
+            font-size: 18px;
+            font-family: 'Hind Siliguri', sans-serif;
+            resize: none;
+            background-color: #f8fafc;
+            outline: none;
+            transition: 0.3s;
+        }
+        textarea:focus { background-color: #fff; border-color: #3b82f6; }
+
+        /* Button Group */
+        .btn-group { display: flex; gap: 15px; margin-bottom: 20px; }
+        button {
+            padding: 15px; border: none; border-radius: 12px;
+            font-size: 16px; font-weight: 600; cursor: pointer;
+            font-family: 'Hind Siliguri', sans-serif; transition: all 0.2s;
+        }
+        .btn-clear { flex: 1; background-color: #f1f5f9; color: #64748b; }
+        .btn-clear:hover { background-color: #e2e8f0; color: #ef4444; }
+        .btn-check {
+            flex: 3; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+        }
+        .btn-check:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3); }
+
+        /* Result Container */
+        .result-container {
+            display: none;
+            background: #fff;
+            border: 2px solid #e2e8f0;
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            animation: slideUp 0.4s ease-out;
+        }
+
+        .result-label { font-size: 1.4rem; font-weight: 700; margin-bottom: 20px; display: block; }
+
+        .circle-wrapper {
+            position: relative;
+            width: 150px;
+            height: 150px;
+            margin: 0 auto; 
+        }
+
+        svg {
+            transform: rotate(-90deg); 
+            width: 100%; height: 100%;
+        }
+        circle {
+            fill: none;
+            stroke-width: 8; 
+            stroke-linecap: round; 
+        }
+        .circle-bg { stroke: #e2e8f0; }
+        .circle-progress {
+            stroke-dasharray: 283; 
+            stroke-dashoffset: 283; 
+            transition: stroke-dashoffset 1s ease-in-out, stroke 0.3s;
+        }
+
+        .percentage-text {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.8rem; font-weight: 700; color: #333;
+        }
+        .confidence-label {
+            font-size: 0.8rem; color: #999; display: block; font-weight: normal;
+        }
+
+        
+        .ai-text .result-label { color: #dc2626; }
+        .ai-text .circle-progress { stroke: #dc2626; }
+        .ai-text { background-color: #fef2f2; border-color: #fca5a5; }
+
+        .human-text .result-label { color: #16a34a; }
+        .human-text .circle-progress { stroke: #16a34a; }
+        .human-text { background-color: #f0fdf4; border-color: #86efac; }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>📝 Bengali AI Text Detector </h1>
+    <p class="subtitle">আপনার টেক্সট যাচাই করুন</p>
+    
+    <div class="input-wrapper">
+        <textarea id="inputText" placeholder="এখানে লেখা পেস্ট করুন..."></textarea>
+    </div>
+
+    <div class="btn-group">
+        <button class="btn-clear" onclick="clearText()">Clear 🗑️</button>
+        <button class="btn-check" onclick="checkText()" id="checkBtn">Check Result 🚀</button>
+    </div>
+
+    <div id="resultContainer" class="result-container">
+        <span id="resultLabel" class="result-label">ফলাফল</span>
+        
+        <div class="circle-wrapper">
+            <svg viewBox="0 0 100 100">
+                <circle class="circle-bg" cx="50" cy="50" r="45"></circle>
+                <circle id="progressCircle" class="circle-progress" cx="50" cy="50" r="45"></circle>
+            </svg>
+            <div class="percentage-text">
+                <span id="scoreText">0%</span>
+                <span class="confidence-label">Confidence</span>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    const circumference = 2 * Math.PI * 45; 
+
+    function clearText() {
+        document.getElementById("inputText").value = "";
+        document.getElementById("resultContainer").style.display = "none";
+        document.getElementById("progressCircle").style.strokeDashoffset = circumference;
+        document.getElementById("scoreText").innerText = "0%";
+        document.getElementById("inputText").focus();
+    }
+
+    async function checkText() {
+        const text = document.getElementById("inputText").value;
+        const resultContainer = document.getElementById("resultContainer");
+        const progressCircle = document.getElementById("progressCircle");
+        const resultLabel = document.getElementById("resultLabel");
+        const scoreText = document.getElementById("scoreText");
+        const btn = document.getElementById("checkBtn");
+
+        if (!text.trim()) {
+            alert("দয়া করে আগে কিছু লিখুন!");
+            return;
+        }
+
+        btn.innerText = "Checking...";
+        btn.disabled = true;
+        btn.style.opacity = "0.7";
+        resultContainer.style.display = "none";
+
+        const apiUrl = "/predict"; 
+
+        try {
+            const response = await fetch(apiUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ text: text })
+            });
+
+            const data = await response.json();
+            
+            resultContainer.style.display = "block";
+            
+            const scorePercent = parseFloat(data.confidence);
+            const offset = circumference - (scorePercent / 100) * circumference;
+
+            setTimeout(() => {
+                progressCircle.style.strokeDashoffset = offset;
+                scoreText.innerText = scorePercent.toFixed(1) + "%"; 
+            }, 100);
+
+            if (data.result === "AI") {
+                resultContainer.className = "result-container ai-text";
+                resultLabel.innerText = "🚨 এটি AI-এর লেখা";
+            } else {
+                resultContainer.className = "result-container human-text";
+                resultLabel.innerText = "✅ এটি মানুষের লেখা";
+            }
+
+        } catch (error) {
+            console.error(error);
+            alert("Connection Error! Colab লিঙ্ক চেক করুন।");
+        } finally {
+            btn.innerText = "Check Result 🚀";
+            btn.disabled = false;
+            btn.style.opacity = "1";
+        }
+    }
+</script>
+
+</body>
+</html>
